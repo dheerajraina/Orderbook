@@ -5,7 +5,7 @@ class OrderBook:
     def __init__(self):
         self.buy_orders = []  # arranged in descending order -> Max heap
         self.sell_orders = []  # arranged in ascending order -> Min heap
-
+        self.trades = []  # stores all the trades
         # TODO -> handle order modification and cancellation as well
 
     def add_order(self, order):
@@ -44,4 +44,41 @@ class OrderBook:
             print(f"{buy_line:<30}| {sell_line}")
 
     def handle_new_order(self, order):
-        self.add_order(order)
+        if order.order_type == "market":
+            return self.handle_market_order(order)
+        else:
+            self.add_order(order)
+
+    def handle_market_order(self, order):
+        # Market Orders match immediately with the opposite side
+        if order.side == "buy":
+            if not self.sell_orders:
+                print(
+                    f"Market buy order {order.order_id} rejected: No liquidity available")
+                return
+            while order.quantity > 0 and self.sell_orders:
+                best_sell = self.sell_orders[0][2]
+                traded_quantity = min(order.quantity, best_sell.quantity)
+                self.trades.append((order.order_id, best_sell.order_id,
+                                    traded_quantity, best_sell.price))
+                order.quantity -= traded_quantity
+                best_sell.quantity -= traded_quantity
+
+                if best_sell.quantity == 0:
+                    heapq.heappop(self.sell_orders)
+
+        else:  # market sell orders
+            if not self.buy_orders:
+                print(
+                    f"Market sell order {order.order_id} rejected: No liquidity available")
+                return
+            while order.quantity > 0 and self.buy_orders:
+                best_buy = self.buy_orders[0][2]
+                traded_quantity = min(order.quantity, best_buy.quantity)
+                self.trades.append((best_buy.order_id, order.order_id,
+                                    traded_quantity, best_buy.price))
+                order.quantity -= traded_quantity
+                best_buy.quantity -= traded_quantity
+
+                if best_buy.quantity == 0:
+                    heapq.heappop(self.buy_orders)
