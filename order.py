@@ -10,6 +10,11 @@ class Order:
         self.order_type = order_type  # limit,market,stop
         self.timestamp = timestamp
 
+    def __lt__(self, other):
+        return self.price < other.price
 
-def __repr__(self):
-    return f"Order(id={self.order_id},price={self.price},quantity={self.quantity},side={self.side},type={self.order_type})"
+    def __eq__(self, other):
+        return self.price == other.price
+
+    def __repr__(self):
+        return f"Order(id={self.order_id},price={self.price},quantity={self.quantity},side={self.side},type={self.order_type})"
