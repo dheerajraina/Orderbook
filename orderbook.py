@@ -7,7 +7,10 @@ class OrderBook:
         self.buy_orders = []  # arranged in descending order -> Max heap
         self.sell_orders = []  # arranged in ascending order -> Min heap
         self.trades = []  # stores all the trades
-        # TODO -> handle order modification and cancellation as well
+
+        # keeps track of all the orders by their; used for modification/cancellation
+        self.orders_register = {}
+        # TODO -> handle order modification as well
 
     def add_order(self, order):
         if order.side == "buy":
@@ -16,6 +19,15 @@ class OrderBook:
         else:
             heapq.heappush(self.sell_orders,
                            (order.price, order.timestamp, order))
+        self.orders_register[order.order_id] = order
+
+    def cancel_order(self, order_id):
+        if order_id in self.orders_register:
+            order = self.orders_register.pop(order_id)
+            order.quantity = 0  # mark as cancelled
+        else:
+            print(
+                f"Cancel Error: Order {order_id} not present or already executed")
 
     def display_order_book(self):
         os.system('clear')
@@ -31,7 +43,7 @@ class OrderBook:
 
         # Max length b/w buy and sell for row alignment
         max_len = min(len(buy_orders), len(sell_orders),
-                      25)  # showing <= top 20 bids/asks
+                      30)  # showing <= top 20 bids/asks
         for i in range(max_len):
             buy_line = ""
             sell_line = ""
@@ -47,6 +59,9 @@ class OrderBook:
             print(f"{buy_line:<30}| {sell_line}")
 
     def handle_new_order(self, order):
+        if order.quantity <= 0 or order.price <= 0:
+            print("Order price/quantity can't be zero")
+            return
         if order.order_type == "market":
             return self.handle_market_order(order)
         else:
@@ -91,6 +106,14 @@ class OrderBook:
         while (self.buy_orders and self.sell_orders):
             best_buy = self.buy_orders[0][2]
             best_sell = self.sell_orders[0][2]
+
+            # Skip canceled orders with quantity = 0
+            if best_buy.quantity == 0:
+                heapq.heappop(self.buy_orders)  # Remove canceled buy order
+                continue
+            if best_sell.quantity == 0:
+                heapq.heappop(self.sell_orders)  # Remove canceled sell order
+                continue
 
             if -best_buy.price >= best_sell.price:
                 traded_quantity = min(best_buy.quantity, best_sell.quantity)
