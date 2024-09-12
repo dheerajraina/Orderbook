@@ -10,7 +10,6 @@ class OrderBook:
 
         # keeps track of all the orders by their; used for modification/cancellation
         self.orders_register = {}
-        # TODO -> handle order modification as well
 
     def add_order(self, order):
         if order.side == "buy":
@@ -28,6 +27,20 @@ class OrderBook:
         else:
             print(
                 f"Cancel Error: Order {order_id} not present or already executed")
+
+    def modify_order(self, order_id, new_quantity, new_price):
+        if order_id in self.orders_register:
+            order = self.orders_register[order_id]
+            order.quantity = new_quantity
+            if new_price is not None:
+                order.price = new_price
+
+            # cancelling the old order and reinserting the new one
+            self.cancel_order(order_id)
+            self.add_order(order)
+        else:
+            print(
+                f"Modification Error: Order {order_id} not present or already executed")
 
     def display_order_book(self):
         os.system('clear')
