@@ -1,4 +1,5 @@
 import heapq
+import os
 
 
 class OrderBook:
@@ -17,6 +18,7 @@ class OrderBook:
                            (order.price, order.timestamp, order))
 
     def display_order_book(self):
+        os.system('clear')
         print(
             f"{'Price':<10}{'Side':<8}{'Quantity':<10}{'|':<3}{'Price':<10}{'Side':<8}{'Quantity'}")
         print("-" * 50)
@@ -28,7 +30,8 @@ class OrderBook:
             x[0], x[1]))
 
         # Max length b/w buy and sell for row alignment
-        max_len = max(len(buy_orders), len(sell_orders))
+        max_len = min(len(buy_orders), len(sell_orders),
+                      25)  # showing <= top 20 bids/asks
         for i in range(max_len):
             buy_line = ""
             sell_line = ""
@@ -48,6 +51,7 @@ class OrderBook:
             return self.handle_market_order(order)
         else:
             self.add_order(order)
+            self.match_orders()
 
     def handle_market_order(self, order):
         # Market Orders match immediately with the opposite side
@@ -82,3 +86,24 @@ class OrderBook:
 
                 if best_buy.quantity == 0:
                     heapq.heappop(self.buy_orders)
+
+    def match_orders(self):
+        while (self.buy_orders and self.sell_orders):
+            best_buy = self.buy_orders[0][2]
+            best_sell = self.sell_orders[0][2]
+
+            if -best_buy.price >= best_sell.price:
+                traded_quantity = min(best_buy.quantity, best_sell.quantity)
+                self.trades.append((best_buy.order_id, best_sell.order_id,
+                                    traded_quantity, best_sell.quantity))
+
+                best_buy.quantity -= traded_quantity
+                best_sell.quantity -= traded_quantity
+
+                if best_buy.quantity == 0:
+                    heapq.heappop(self.buy_orders)
+                if best_sell.quantity == 0:
+                    heapq.heappop(self.sell_orders)
+
+            else:
+                break
